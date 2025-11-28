@@ -1,0 +1,8 @@
+bin/
+*.o
+*.obj
+*.pdb
+*.exe
+*.out
+*.log
+.DS_Store
