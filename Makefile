@@ -6,10 +6,10 @@ HOST_CXX ?= clang++
 BIN_DIR := bin
 TARGET := $(BIN_DIR)/hashhat
 HOST_TARGET := $(BIN_DIR)/hashhat_host
-SRC := src/host/main.cu
+SRC_HOST := src/host/main.cu
 
-CXXFLAGS := -std=c++17 -O2
-NVCCFLAGS := -std=c++17 -O2 -arch=$(ARCH)
+CXXFLAGS := -std=c++17 -O2 -Isrc
+NVCCFLAGS := -std=c++17 -O2 -arch=$(ARCH) -Isrc
 HOST_ONLY_FLAGS := -x c++ -nocudainc -nocudalib
 
 .PHONY: all cuda host run clean help
@@ -18,15 +18,15 @@ all: cuda
 
 cuda: $(TARGET)
 
-$(TARGET): $(SRC)
+$(TARGET): $(SRC_HOST)
 	@mkdir -p $(BIN_DIR)
-	$(NVCC) $(NVCCFLAGS) -o $@ $<
+	$(NVCC) $(NVCCFLAGS) -o $@ $(SRC_HOST)
 
 host: $(HOST_TARGET)
 
-$(HOST_TARGET): $(SRC)
+$(HOST_TARGET): $(SRC_HOST)
 	@mkdir -p $(BIN_DIR)
-	$(HOST_CXX) $(CXXFLAGS) $(HOST_ONLY_FLAGS) -o $@ $<
+	$(HOST_CXX) $(CXXFLAGS) $(HOST_ONLY_FLAGS) -o $@ $(SRC_HOST)
 
 run: cuda
 	$(TARGET) --help
