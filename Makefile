@@ -11,6 +11,7 @@ SRC_HOST := src/host/main.cu
 CXXFLAGS := -std=c++17 -O2 -Isrc
 NVCCFLAGS := -std=c++17 -O2 -arch=$(ARCH) -Isrc
 HOST_ONLY_FLAGS := -x c++ -nocudainc -nocudalib
+LDFLAGS := -lncurses
 
 .PHONY: all cuda host run clean help
 
@@ -20,13 +21,13 @@ cuda: $(TARGET)
 
 $(TARGET): $(SRC_HOST)
 	@mkdir -p $(BIN_DIR)
-	$(NVCC) $(NVCCFLAGS) -o $@ $(SRC_HOST)
+	$(NVCC) $(NVCCFLAGS) -o $@ $(SRC_HOST) $(LDFLAGS)
 
 host: $(HOST_TARGET)
 
 $(HOST_TARGET): $(SRC_HOST)
 	@mkdir -p $(BIN_DIR)
-	$(HOST_CXX) $(CXXFLAGS) $(HOST_ONLY_FLAGS) -o $@ $(SRC_HOST)
+	$(HOST_CXX) $(CXXFLAGS) $(HOST_ONLY_FLAGS) -o $@ $(SRC_HOST) $(LDFLAGS)
 
 run: cuda
 	$(TARGET) --help
