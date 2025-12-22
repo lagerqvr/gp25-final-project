@@ -100,12 +100,12 @@ void print_help()
 {
     print_ascii_banner();
     std::cout << "Hashhat - CUDA GPU Password Cracker (CLI scaffold)\n\n";
-    std::cout << "Usage: hashhat [--hash <hex>] [--algo sha1|md5|NTLM] [--charset list] [--min-len N] [--max-len N] [--ui curses|none]\n";
+    std::cout << "Usage: hashhat [--hash <hex>] [--algo sha1|md5|ntlm] [--charset list] [--min-len N] [--max-len N] [--ui curses|none]\n";
     std::cout << "       hashhat --benchmark\n";
     std::cout << "\n";
     std::cout << "Flags (current placeholders):\n";
     std::cout << "  --hash <hex>        Target hash in hex (MD5 initially)\n";
-    std::cout << "  --algo name         sha1 (now) | md5 (WIP) | NTLM (WIP)\n";
+    std::cout << "  --algo name         sha1 (now) | md5 (WIP) | ntlm (now)\n";
     std::cout << "  --charset list      Comma list: lower,upper,num,sym (default: lower)\n";
     std::cout << "  --min-len N         Minimum password length (default: 1)\n";
     std::cout << "  --max-len N         Maximum password length (default: 1)\n";
@@ -1050,7 +1050,7 @@ std::optional<double> run_gpu_baseline(const Options &opts)
             std::vector<uint8_t> def{'a','a','a'};
             target_bytes = md4::hash(def);
         }
-        else // NTLM
+        else // ntlm
         {
             target_bytes = md4::hash(utf8_to_utf16le_bytes("aaa"));
         }
