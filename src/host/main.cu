@@ -284,6 +284,103 @@ void append_analysis_entry(const Options &o, const std::optional<double> &cpu_hp
     out << "Notes: auto-generated from --benchmark (fill in HW details and kernel config).\n";
 }
 
+namespace md5 {
+    constexpr uint32_t K[64] = {
+        0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
+        0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
+        0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
+        0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
+        0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa,
+        0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
+        0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed,
+        0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a,
+        0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c,
+        0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70,
+        0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05,
+        0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
+        0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039,
+        0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
+        0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
+        0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391
+    };
+    constexpr uint32_t S[64] = {
+        7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+        5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
+        4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+        6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
+    };
+
+    std::vector<uint8_t> hash(const std::vector<uint8_t> &data)
+    {
+        uint64_t bit_len = static_cast<uint64_t>(data.size()) * 8;
+        std::vector<uint8_t> msg(data);
+        msg.push_back(0x80);
+        while ((msg.size() % 64) != 56)
+            msg.push_back(0x00);
+        for (int i = 0; i < 8; ++i)
+            msg.push_back(static_cast<uint8_t>((bit_len >> (i * 8)) & 0xFF));
+
+        uint32_t a0 = 0x67452301;
+        uint32_t b0 = 0xefcdab89;
+        uint32_t c0 = 0x98badcfe;
+        uint32_t d0 = 0x10325476;
+
+        for (size_t chunk = 0; chunk < msg.size(); chunk += 64) //msg size is in bytes, 8 * 64 = one 512 bit part
+        {
+            uint32_t M[16];
+            for (int i = 0; i < 16; ++i)
+            {
+                M[i] =  msg[chunk + 4 * i]
+                      | (msg[chunk + 4 * i + 1] << 8)
+                      | (msg[chunk + 4 * i + 2] << 16)
+                      | (msg[chunk + 4 * i + 3] << 24);
+            }
+
+            uint32_t a = a0, b = b0, c = c0, d = d0;
+
+            for (int i = 0; i < 64; i++) 
+            {
+                uint32_t F;
+                uint32_t g;
+                if (i < 16) {
+                    F = (b & c) | ((~b) & d);
+                    g = i;
+                }
+                else if (i < 32) {
+                    F = (d & b) | ((~d) & c);
+                    g = (5 * i + 1) % 16;
+                }
+                else if (i < 48) {
+                    F = b ^ c ^ d;
+                    g = (3 * i + 5) % 16;
+                }
+                else {
+                    F = c ^ (b | (~d));
+                    g = (7 * i) % 16;
+                }
+                F = F + a + K[i] + M[g];
+                a = d;
+                d = c;
+                c = b;
+                b = b + ((F << S[i]) | (F >> (32 - S[i])));
+            }
+            a0 += a;
+            b0 += b;
+            c0 += c;
+            d0 += d;
+        }
+
+        std::vector<uint8_t> digest(16);
+        for (int i = 0; i < 4; i++) {
+            digest[i] = (a0 >> (8 * i)) & 0xFF;
+            digest[4 + i] = (b0 >> (8 * i)) & 0xFF;
+            digest[8 + i] = (c0 >> (8 * i)) & 0xFF;
+            digest[12 + i] = (d0 >> (8 * i)) & 0xFF;
+        }
+        return digest;
+    }
+} // namespace md5
+
 namespace md4
 {
     inline uint32_t rotl(uint32_t value, uint32_t bits)
@@ -609,6 +706,9 @@ BenchmarkResult run_cpu_bruteforce(const Options &opts)
         if (opts.algo == "ntlm")
             return md4::hash(utf8_to_utf16le_bytes(candidate));
 
+        if (opts.algo == "md5")
+            return md5::hash(bytes);
+
         return {};
     };
 
@@ -653,7 +753,7 @@ BenchmarkResult run_cpu_bruteforce(const Options &opts)
 
     size_t expected_len =
         (opts.algo == "sha1") ? 20 :
-        (opts.algo == "md4" || opts.algo == "ntlm") ? 16 : 0;
+        (opts.algo == "md4" || opts.algo == "ntlm" || opts.algo == "md5") ? 16 : 0;
 
     if (target_bytes.size() != expected_len)
     {
@@ -722,7 +822,8 @@ std::optional<double> run_cpu_baseline(const Options &opts)
 {
     if (opts.algo != "sha1" &&
         opts.algo != "md4" &&
-        opts.algo != "ntlm")
+        opts.algo != "ntlm" &&
+        opts.algo != "md5")
     {
         std::cout << "[benchmark][cpu] algo=" << opts.algo << " not implemented (MD5 pending; hook here for Max).\n";
         return std::nullopt;
@@ -751,6 +852,10 @@ std::optional<double> run_cpu_baseline(const Options &opts)
 
 __constant__ uint8_t d_target[20];
 __constant__ char d_charset[128];
+// Used by md5 algo
+__constant__ uint32_t d_K[64];
+__constant__ uint32_t d_S[64];
+
 __device__ int d_charset_len;
 
 __device__ inline uint32_t rotl_dev(uint32_t v, uint32_t bits)
@@ -933,11 +1038,76 @@ __device__ void md4_device(const uint8_t *msg, int len, uint8_t out[16])
     out[12] =  D & 0xFF; out[13] = (D >> 8) & 0xFF; out[14] = (D >> 16) & 0xFF; out[15] = (D >> 24) & 0xFF;
 }
 
+__device__ void md5_device(const uint8_t *msg, int len, uint8_t out[16])
+{
+    uint64_t bit_len = static_cast<uint64_t>(len) * 8;
+    uint8_t block[64] = {0};
+
+    for (int i = 0; i < len; ++i)
+        block[i] = static_cast<uint8_t>(msg[i]);
+    block[len] = 0x80;
+    for (int i = 0; i < 8; ++i)
+        block[56 + i] = static_cast<uint8_t>((bit_len >> (i * 8)) & 0xFF);
+
+    uint32_t a0 = 0x67452301;
+    uint32_t b0 = 0xefcdab89;
+    uint32_t c0 = 0x98badcfe;
+    uint32_t d0 = 0x10325476;
+
+    uint32_t M[16] = {0};
+    for (int i = 0; i < 16; ++i)
+        M[i] = (block[i * 4 + 3] << 24) | (block[i * 4 + 2] << 16) |
+                (block[i * 4 + 1] << 8) | (block[i * 4]);
+
+    uint32_t A = a0;
+    uint32_t B = b0;
+    uint32_t C = c0;
+    uint32_t D = d0;
+    
+    for (int i = 0; i < 64; i++) {
+        std::uint32_t F;
+        std::uint32_t g;
+        if (i < 16) {
+            F = (B & C) | ((~B) & D);
+            g = i;
+        }
+        else if (i < 32) {
+            F = (D & B) | ((~D) & C);
+            g = (5 * i + 1) % 16;
+        }
+        else if (i < 48) {
+            F = B ^ C ^ D;
+            g = (3 * i + 5) % 16;
+        }
+        else {
+            F = C ^ (B | (~D));
+            g = (7 * i) % 16;
+        }
+        F = F + A + d_K[i] + M[g];
+        A = D;
+        D = C;
+        C = B;
+        B = B + ((F << d_S[i]) | (F >> (32 - d_S[i])));
+    }
+    a0 += A;
+    b0 += B;
+    c0 += C;
+    d0 += D;
+
+    for (int i = 0; i < 4; i++) {
+        out[i] = ((a0 >> (8 * i)) & 0xff) ;
+        out[i + 4] = ((b0 >> (8 * i)) & 0xff);
+        out[i + 8] = ((c0 >> (8 * i)) & 0xff);
+        out[i + 12] = ((d0 >> (8 * i)) & 0xff);
+    }
+}
+
 enum HashAlgo
     {
         HASH_SHA1 = 0,
         HASH_MD4  = 1,
-        HASH_NTLM = 2
+        HASH_NTLM = 2,
+        HASH_MD5  = 3
     };
 
 __global__ void bruteforce_kernel(uint64_t start_idx, uint64_t total, int len, int algo, char *found_word, int *found_flag)
@@ -957,6 +1127,14 @@ __global__ void bruteforce_kernel(uint64_t start_idx, uint64_t total, int len, i
     {
         sha1_device(candidate, len, digest);
         digest_len = 20;
+    }
+    else if (algo == HASH_MD5)
+    {
+        uint8_t input[16];
+        int input_len = len;
+        memcpy(input, candidate, len);
+        md5_device(input, input_len, digest);
+        digest_len = 16;
     }
     else
     {
@@ -1014,6 +1192,11 @@ std::optional<double> run_gpu_baseline(const Options &opts)
         algo = HASH_NTLM;
         hash_len = 16;
     }
+    else if (opts.algo == "md5")
+    {
+        algo = HASH_MD5;
+        hash_len = 16;
+    }
     else
     {
         std::cout << "[benchmark][gpu] algo=" << opts.algo << " not implemented (MD5 pending; slot for Max).\n";
@@ -1050,6 +1233,11 @@ std::optional<double> run_gpu_baseline(const Options &opts)
             std::vector<uint8_t> def{'a','a','a'};
             target_bytes = md4::hash(def);
         }
+        else if (algo == HASH_MD5)
+        {
+            std::vector<uint8_t> def{'a','a','a'};
+            target_bytes = md5::hash(def);
+        }
         else // ntlm
         {
             target_bytes = md4::hash(utf8_to_utf16le_bytes("aaa"));
@@ -1070,6 +1258,11 @@ std::optional<double> run_gpu_baseline(const Options &opts)
     CUDA_CHECK(cudaMemcpyToSymbol(d_charset, charset.data(), charset_len));
     CUDA_CHECK(cudaMemcpyToSymbol(d_charset_len, &charset_len, sizeof(int)));
     CUDA_CHECK(cudaMemcpyToSymbol(d_target, target_bytes.data(), hash_len));
+    if (algo == HASH_MD5)
+    {
+        CUDA_CHECK(cudaMemcpyToSymbol(d_K, md5::K, sizeof(md5::K)));
+        CUDA_CHECK(cudaMemcpyToSymbol(d_S, md5::S, sizeof(md5::S)));
+    }
 
     char *d_found_word = nullptr;
     int *d_found_flag = nullptr;
