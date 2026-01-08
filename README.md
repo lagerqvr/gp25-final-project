@@ -78,6 +78,7 @@ Hashhat takes a hashed password, generates lots of password guesses on the GPU, 
 ## Contributions
 
 - Rasmus Lagerqvist: Project skeleton/structure, team setup, SHA-1 CPU/GPU cracker, benchmark harness, analysis writeup.
+- Tobias Holm: Cursor UI implementation and local gpu testing
 
 ## Project status
 
