@@ -45,48 +45,10 @@ Hashhat takes a hashed password, generates lots of password guesses on the GPU, 
 - Medium: add upper/lower/numbers/symbols toggle and variable length (e.g., 4-8 chars).
 - Stretch: multiple hash algorithms (MD5, SHA)
 
-## Workstreams (what each person can own)
-
-- **1) GPU search loop**: map thread IDs to password guesses, hash, compare. Grid/block sizing and length/charset handling. **Status:** done (SHA-1)
-- **2) Hash functions**: add MD5 (CPU+GPU); SHA-1 is done. **Status:** MD5 pending (Max)
-- **3) Host runner + CLI**: parse flags, launch GPU work, stop when found, print stats. **Status:** done
-- **4) Terminal dashboard (optional)**: curses UI for progress/H/s/ETA. **Status:** not started
-- **5) Speed tuning**: constants/occupancy/unrolling; profile with Nsight. **Status:** partial (constants, block=256, chunking)
-- **6) Benchmarks + report**: run on Puhti/Mahti, log CPU vs GPU, summarize. **Status:** done (SHA-1)
-- **7) Analysis**: bottlenecks, optimization notes, benchmark results in `results/ANALYSIS.md`. **Status:** done (Rasmus)
-
-### Current TODO tags in code
-
-- TODO 1: Wire GPU kernel launch (hash generation + compare) using parsed options. **Status:** done (SHA-1)
-- TODO 2: Add CPU baseline for correctness and simple benchmark output. **Status:** done (SHA-1); MD5 pending
-- TODO 3: Integrate curses dashboard when using the flag `--ui=curses`. **Status:** not started
-- TODO 4: Add configurable hash algorithm selection (MD5 now, SHA variants later). **Status:** SHA-1 done; MD5 pending (Max)
-- TODO 5: Move charset/hash data to constant memory and measure speedups. **Status:** partial (constants used)
-- TODO 6: Add test hooks for small keyspaces to validate end-to-end (nice-to-have; tests are optional add-ons). **Status:** not started
-- TODO 7: Benchmark harness + analysis writeup (CPU vs GPU timing, bottlenecks, results in `results/ANALYSIS.md`). **Status:** done (Rasmus)
-
-## Pick a TODO and claim it (Name / Status)
-
-- TODO 1: (Rasmus) done (SHA-1)
-- TODO 2: (Rasmus; MD5 by Max) SHA-1 done; MD5 not started
-- TODO 3: -
-- TODO 4: (Rasmus; MD5 by Max) SHA-1 done; MD5 not started
-- TODO 5: -
-- TODO 6: -
-- TODO 7: (Rasmus) done
-
 ## Contributions
 
 - Rasmus Lagerqvist: Project skeleton/structure, team setup, SHA-1 CPU/GPU cracker, benchmark harness, analysis writeup.
 - Tobias Holm: Cursor UI implementation and local gpu testing
-
-## Project status
-
-- CPU SHA-1 brute force implemented (capped workload for quick runs).
-- GPU SHA-1 brute force implemented (lengths up to 8, simple kernel); requires CUDA build.
-- Benchmark harness (`--benchmark`) runs CPU+GPU and logs to `results/ANALYSIS.md`.
-- Default benchmark hash: SHA-1("aaa") if no `--hash` is provided.
-- MD5 support pending (Max to implement under TODO 2/4).
 
 ## Project structure
 
@@ -118,9 +80,3 @@ make host
 ```
 
 (CLI flags are placeholders)
-
-## Ways of working
-
-- Grab a TODO from the list and work in your area; leave the rest stubbed.
-- Leave comments near your changes about assumptions or expected inputs so others can plug in their parts without conflicts.
-- If you’re doing analysis on your results, add notes in `results/ANALYSIS.md`.
