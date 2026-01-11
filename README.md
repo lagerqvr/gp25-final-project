@@ -2,7 +2,7 @@
 
 GPU Programming 2025 final project. Build a CUDA-based brute-force password cracker. Target platform: CSC GPUs (Puhti/Mahti); develop locally with CUDA where possible. CLI-first; optional curses-style dashboard for progress/H/s/ETA.
 
-Team: Inka Byskata, Max Söderholm, Niina Rahko, Rasmus Lagerqvist, Tobias Holm
+Team: Max Söderholm, Niina Rahko, Rasmus Lagerqvist, Tobias Holm
 
 ```
                     _.--._
@@ -49,6 +49,7 @@ Hashhat takes a hashed password, generates lots of password guesses on the GPU, 
 
 - Rasmus Lagerqvist: Project skeleton/structure, team setup, SHA-1 CPU/GPU cracker, benchmark harness, analysis writeup.
 - Tobias Holm: Cursor UI implementation and local gpu testing
+- Niina Rahko: MD4 hashing algorithm implementation, NTLM support, MD4/NTLM benchmarking
 
 ## Project structure
 
