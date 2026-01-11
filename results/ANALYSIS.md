@@ -49,3 +49,25 @@ srun --account=project_2016196 --partition=gpusmall --gres=gpu:a100:1 \
 
 - Run A: CPU 2.09e6 H/s, GPU 3.38e7 H/s, speedup ~16.2x (target SHA-1("aaa"), lower 3–5).
 - Run B: CPU 2.06e6 H/s, GPU 1.55e9 H/s, speedup ~750x (target `t0m8`, lower+num len=4).
+
+## MD4 and NTLM benchmarking
+
+device=NVIDIA A100-SXM4-40GB MIG 1g.5gb, len=4, charset=36, target=2947d49576676f9aaa39d830c756effd, block=256, grid_first=6561, chunk=10000000
+Date: 2026-01-11T19:37:37Z
+Charset/len: lower,num / 3-5
+CPU H/s: 2185361.829982
+GPU H/s: 2276244550.927892
+Speedup (GPU/CPU): 1041.59x
+Notes: found=t0m8
+
+device=NVIDIA A100-SXM4-40GB MIG 1g.5gb, len=4, charset=36, target=6f0142ff3493987cf859ed183411d969, block=256, grid_first=6561, chunk=10000000
+Date: 2026-01-11T19:42:09Z
+Charset/len: lower,num / 3-5
+CPU H/s: 1652830.685992
+GPU H/s: 2256812512.746498
+Speedup (GPU/CPU): 1365.42x
+Notes: found=t0m8
+
+## MD4 and NTLM analysis
+
+Looking at the case above where the GPU is fully utlizied with the password t0m8, we can see that the NTLM case is faster than the md4, even if the NTLM requires an extra step for encoding. This is because the UTF16-LE encoding sorts bytes to be more accessible for the GPU, resulting in a faster throughput. In a case with an easier password, the overhead of the kernel is high and both MD4 and NTLM have a lower speedup, but still shows the trend of the NTLM being faster. 
