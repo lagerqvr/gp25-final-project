@@ -71,3 +71,46 @@ Notes: found=t0m8
 ## MD4 and NTLM analysis
 
 Looking at the case above where the GPU is fully utlizied with the password t0m8, we can see that the NTLM case is faster than the md4, even if the NTLM requires an extra step for encoding. This is because the UTF16-LE encoding sorts bytes to be more accessible for the GPU, resulting in a faster throughput. In a case with an easier password, the overhead of the kernel is high and both MD4 and NTLM have a lower speedup, but still shows the trend of the NTLM being faster. 
+
+
+## MD5 benchmarks
+
+To test the implementation of the MD5 algorithm, the same benchmarking tests were performed. Differing from the other benchmarks, the MD5 algorithm was
+tested locally to get some variation to the tests and results.
+
+### Benchmark run
+
+- Device:  NVIDIA GeForce RTX 4070 Ti SUPER
+
+         
+Simple benchmark, target `aaa`.
+
+- Command: `./bin/hashhat --benchmark --algo md5 --charset lower --min-len 3 --max-len 5`
+- CPU H/S: **658328**
+- GPU H/S: **2.18986e+07**
+- Speedup: **33.2639x**
+
+
+Benchmark for the target `t0m8`.
+
+- Command: `./bin/hashhat --algo md5 --hash 76f5237d8f33341b5d686bae8631d65e --charset lower,num --min-len 4 --max-len 4`
+- CPU H/S: **5.05406e+06**
+- GPU H/S: **2.81819e+09**
+- Speedup: **~550x**
+
+### Analysis
+
+As anticipated, the GPU performs better in the benchmarks compared to the CPU. We can see an increase in hashes per second
+for both the CPU and GPU when the complexity of the target increases. This is most likely due to the fact that the word
+`aaa` is the first combination and most of the execution time is spent on setting up the computation. Once we move to a
+more computational task, such as cracking the second hash, we spend much more time doing work, reducing the percentage of
+overhead.
+
+An improvement to the implementation that was made to try to reduce the computations per hash was to replace the calculations
+for the variable `g` with a table with pre-calculated values. \
+What was done in practice was:
+
+- (5 * i + 1) % 16 -> d_g[i]
+- (3 * i + 5) % 16 -> d_g[i]
+
+By making this small change, the H/s, averaging **~1.6e9** for the target `t0m8` was increased to averaging over **2.0e9** H/s.
