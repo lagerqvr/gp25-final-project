@@ -1038,7 +1038,14 @@ __device__ void md4_device(const uint8_t *msg, int len, uint8_t out[16])
     out[12] =  D & 0xFF; out[13] = (D >> 8) & 0xFF; out[14] = (D >> 16) & 0xFF; out[15] = (D >> 24) & 0xFF;
 }
 
-__device__ void md5_device(const uint8_t *msg, int len, uint8_t out[16])
+__constant__ uint8_t d_g[64] = {
+     0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
+     1,  6, 11,  0,  5, 10, 15,  4,  9, 14,  3,  8, 13,  2,  7, 12,
+     5,  8, 11, 14,  1,  4,  7, 10, 13,  0,  3,  6,  9, 12, 15,  2,
+     0,  7, 14,  5, 12,  3, 10,  1,  8, 15,  6, 13,  4, 11,  2,  9
+};
+
+__device__ __forceinline__ void md5_device(const uint8_t *msg, int len, uint8_t out[16])
 {
     uint64_t bit_len = static_cast<uint64_t>(len) * 8;
     uint8_t block[64] = {0};
@@ -1073,15 +1080,15 @@ __device__ void md5_device(const uint8_t *msg, int len, uint8_t out[16])
         }
         else if (i < 32) {
             F = (D & B) | ((~D) & C);
-            g = (5 * i + 1) % 16;
+            g = d_g[i];
         }
         else if (i < 48) {
             F = B ^ C ^ D;
-            g = (3 * i + 5) % 16;
+            g = d_g[i];
         }
         else {
             F = C ^ (B | (~D));
-            g = (7 * i) % 16;
+            g = d_g[i];
         }
         F = F + A + d_K[i] + M[g];
         A = D;

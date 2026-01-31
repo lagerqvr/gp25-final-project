@@ -50,6 +50,7 @@ Hashhat takes a hashed password, generates lots of password guesses on the GPU, 
 - Rasmus Lagerqvist: Project skeleton/structure, team setup, SHA-1 CPU/GPU cracker, benchmark harness, analysis writeup.
 - Tobias Holm: Cursor UI implementation and local gpu testing
 - Niina Rahko: MD4 hashing algorithm implementation, NTLM support, MD4/NTLM benchmarking
+- Max Söderholm: MD5 CPU and CUDA implementation, MD5 results.
 
 ## Project structure
 
